@@ -4,8 +4,8 @@ from matplotlib.animation import FuncAnimation
 from scipy.sparse import diags, eye
 from scipy.sparse.linalg import factorized
 
-t_final = 10
-nr_t_steps = 10000
+t_final = 2
+nr_t_steps = 200000
 times = np.linspace(0, t_final, nr_t_steps)
 t_step = times[1] - times[0]
 
@@ -17,8 +17,10 @@ x_step = xs[1]-xs[0]
 psi = np.zeros(len(xs), dtype=complex)
 
 for i, x in enumerate(xs):
-    if 10-3.33/2 < x <= 10+3.33/2:
-        psi[i] = np.exp(-1j*x)*np.sin(np.pi*3*(x-10+3.33/2)/10)
+    if 8 < x < 9:
+        psi[i] = np.sin(np.pi*(x-8))
+    if 10 < x < 11:
+        psi[i] = np.sin(np.pi*(x-10))
 
 prob = np.abs(psi)**2
 total = np.sum(prob)
@@ -31,7 +33,7 @@ def second_der(f, step):
     return result
 
 fig, ax = plt.subplots()
-ax.set_ylim(0, 0.5)
+ax.set_ylim(0, 0.2)
 plot, = ax.plot(xs, prob)
 
 def se_rhs(psi):
@@ -40,10 +42,12 @@ def se_rhs(psi):
 psi_evolution = np.zeros((len(times), len(xs)), dtype=complex)
 
 for i, t in enumerate(times):
-    k1 = t_step * se_rhs(psi)
-    k2 = t_step * se_rhs(psi + 0.5*k1)
-    k3 = t_step * se_rhs(psi + 0.5*k2)
-    k4 = t_step * se_rhs(psi + k3)
+    prob = np.absolute(psi)**2
+    local_t = 0.001 * t_step / np.maximum(prob**2, 0.0001)
+    k1 = local_t * se_rhs(psi)
+    k2 = local_t * se_rhs(psi + 0.5*k1)
+    k3 = local_t * se_rhs(psi + 0.5*k2)
+    k4 = local_t * se_rhs(psi + k3)
 
     psi = psi + 1/6 * (k1 + 2*k2 + 2*k3 + k4)
     prob = np.absolute(psi)**2
@@ -66,5 +70,5 @@ def update(frame):
     plot.set_data(xs, prob)
     return plot
 
-ani = FuncAnimation(fig, update, frames=range(0, len(times), 50))
+ani = FuncAnimation(fig, update, frames=range(0, len(times), 1000))
 plt.show()
